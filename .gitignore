@@ -1,0 +1,18 @@
+# Dependency directories
+node_modules/
+
+# Local env files
+.env
+Agent.md
+REVIEW.md
+
+# Large PyTorch models and binary assets
+Model/
+*.pth
+
+# Large generated data files
+scripts/item_embeddings.json
+
+# OS specific files
+.DS_Store
+Thumbs.db
