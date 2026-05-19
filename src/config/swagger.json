@@ -1,0 +1,753 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Tastee Backend API",
+    "version": "1.0.0",
+    "description": "REST API documentation for Tastee – a personalized meal planning and nutrition tracking application. Features include JWT authentication, onboarding, macro targets calculation, food database search, food schedule logging, daily progress summary, and hybrid recommendation engine."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Access Token. Enter your token without 'Bearer ' prefix."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "VALIDATION_ERROR"
+              },
+              "message": {
+                "type": "string",
+                "example": "Thiếu các thông tin bắt buộc"
+              }
+            }
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["name", "email", "password"],
+        "properties": {
+          "name": { "type": "string", "example": "Nguyễn Văn A" },
+          "email": { "type": "string", "format": "email", "example": "vana@example.com" },
+          "password": { "type": "string", "minLength": 6, "example": "securepassword123" }
+        }
+      },
+      "RegisterResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid", "example": "4a428fe5-1fc3-4e4b-bb15-3f307fd0f6f7" },
+              "name": { "type": "string", "example": "Nguyễn Văn A" },
+              "email": { "type": "string", "example": "vana@example.com" }
+            }
+          },
+          "message": { "type": "string", "example": "Đăng ký tài khoản thành công" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email", "example": "vana@example.com" },
+          "password": { "type": "string", "example": "securepassword123" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "accessToken": { "type": "string", "example": "eyJhbGciOiJIUzI1..." },
+              "refreshToken": { "type": "string", "example": "eyJhbGciOiJIUzI1..." }
+            }
+          },
+          "message": { "type": "string", "example": "Đăng nhập thành công" }
+        }
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "required": ["refreshToken"],
+        "properties": {
+          "refreshToken": { "type": "string", "example": "eyJhbGciOiJIUzI1..." }
+        }
+      },
+      "RefreshResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "accessToken": { "type": "string", "example": "eyJhbGciOiJIUzI1..." },
+              "refreshToken": { "type": "string", "example": "eyJhbGciOiJIUzI1..." }
+            }
+          },
+          "message": { "type": "string", "example": "Refresh token thành công" }
+        }
+      },
+      "OnboardingRequest": {
+        "type": "object",
+        "required": ["gender", "dateOfBirth", "heightCm", "weightKg", "cuisines", "allergies", "dietTags"],
+        "properties": {
+          "gender": { "type": "string", "enum": ["male", "female"], "example": "male" },
+          "dateOfBirth": { "type": "string", "format": "date", "example": "1995-06-15" },
+          "heightCm": { "type": "number", "example": 175.5 },
+          "weightKg": { "type": "number", "example": 70.0 },
+          "cuisines": { "type": "array", "items": { "type": "string" }, "example": ["vietnamese", "italian"] },
+          "allergies": { "type": "array", "items": { "type": "string" }, "example": ["peanut"] },
+          "dietTags": { "type": "array", "items": { "type": "string" }, "example": ["high-protein"] }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "7c12850d-d421-4f3b-b27a-e4618e47bf03" },
+          "name": { "type": "string", "example": "Nguyễn Văn A" },
+          "email": { "type": "string", "example": "vana@example.com" },
+          "gender": { "type": "string", "example": "male" },
+          "date_of_birth": { "type": "string", "format": "date", "example": "1995-06-15" },
+          "height_cm": { "type": "string", "example": "175.5" },
+          "weight_kg": { "type": "string", "example": "70.0" },
+          "daily_calories": { "type": "string", "example": "2375.0" },
+          "daily_protein": { "type": "string", "example": "148.0" },
+          "daily_carbs": { "type": "string", "example": "297.0" },
+          "daily_fat": { "type": "string", "example": "66.0" },
+          "cuisines": { "type": "array", "items": { "type": "string" }, "example": ["vietnamese", "italian"] },
+          "allergies": { "type": "array", "items": { "type": "string" }, "example": ["peanut"] },
+          "diet_tags": { "type": "array", "items": { "type": "string" }, "example": ["high-protein"] },
+          "is_onboarding_complete": { "type": "boolean", "example": true }
+        }
+      },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "example": "Nguyễn Văn A Mới" },
+          "gender": { "type": "string", "enum": ["male", "female"], "example": "male" },
+          "dateOfBirth": { "type": "string", "format": "date", "example": "1995-06-15" },
+          "heightCm": { "type": "number", "example": 178 },
+          "weightKg": { "type": "number", "example": 75 }
+        }
+      },
+      "Food": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "001acc7d-1804-483b-b721-7c2d88537485" },
+          "external_id": { "type": "integer", "example": 32983 },
+          "name": { "type": "string", "example": "carbonara rachael ray" },
+          "name_vi": { "type": "string", "nullable": true, "example": "Mì Ý Sốt Kem Carbonara" },
+          "image_url": { "type": "string", "nullable": true, "example": "https://example.com/carbonara.jpg" },
+          "ingredients": { "type": "string", "example": "spaghetti, extra virgin olive oil, pancetta, romano cheese" },
+          "calories": { "type": "string", "example": "350.5" },
+          "protein": { "type": "string", "example": "15.2" },
+          "carbs": { "type": "string", "example": "45.0" },
+          "fat": { "type": "string", "example": "12.8" },
+          "tags": { "type": "array", "items": { "type": "string" }, "example": ["italian", "pasta"] }
+        }
+      },
+      "AddMealRequest": {
+        "type": "object",
+        "required": ["foodId", "scheduledAt", "quantityG"],
+        "properties": {
+          "foodId": { "type": "string", "format": "uuid", "example": "001acc7d-1804-483b-b721-7c2d88537485" },
+          "scheduledAt": { "type": "string", "format": "date-time", "example": "2025-01-15T08:00:00Z" },
+          "quantityG": { "type": "number", "minimum": 1, "example": 150.0 }
+        }
+      },
+      "Meal": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "c5d17ea1-79fc-482a-aef2-bc32fa4c0321" },
+          "food_id": { "type": "string", "format": "uuid", "example": "001acc7d-1804-483b-b721-7c2d88537485" },
+          "scheduled_at": { "type": "string", "format": "date-time", "example": "2025-01-15T08:00:00.000Z" },
+          "quantity_g": { "type": "string", "example": "150.0" },
+          "calories_snap": { "type": "string", "example": "525.8" },
+          "protein_snap": { "type": "string", "example": "22.8" },
+          "carbs_snap": { "type": "string", "example": "67.5" },
+          "fat_snap": { "type": "string", "example": "19.2" },
+          "food_name": { "type": "string", "example": "carbonara rachael ray" },
+          "food_name_vi": { "type": "string", "nullable": true, "example": "Mì Ý Sốt Kem Carbonara" },
+          "food_image_url": { "type": "string", "nullable": true, "example": "https://example.com/carbonara.jpg" }
+        }
+      },
+      "UpdateMealRequest": {
+        "type": "object",
+        "properties": {
+          "scheduledAt": { "type": "string", "format": "date-time", "example": "2025-01-15T08:30:00Z" },
+          "quantityG": { "type": "number", "minimum": 1, "example": 200 }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Đăng ký tài khoản mới",
+        "description": "Tạo tài khoản người dùng Tastee bằng tên, email và mật khẩu.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Đăng ký thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi dữ liệu đầu vào hoặc Email đã tồn tại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Đăng nhập",
+        "description": "Xác thực bằng Email và Mật khẩu. Trả về Access Token và Refresh Token.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đăng nhập thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Thông tin đăng nhập không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Refresh Access Token",
+        "description": "Tạo mới Access Token và Refresh Token từ Refresh Token cũ còn hạn.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tạo token thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refresh token không hợp lệ hoặc hết hạn",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Đăng xuất",
+        "description": "Hủy Refresh Token của người dùng, kết thúc phiên làm việc.",
+        "responses": {
+          "200": {
+            "description": "Đăng xuất thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Đăng xuất thành công" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/onboarding": {
+      "post": {
+        "summary": "Thiết lập Onboarding",
+        "description": "Nhập các chỉ số chiều cao, cân nặng, sở thích và chất gây dị ứng. Hệ thống tự động tính toán mục tiêu Calo hàng ngày cùng các Target Macro (Protein, Carbs, Fat) sử dụng công thức Mifflin-St Jeor.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Onboarding thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/UserProfile" },
+                    "message": { "type": "string", "example": "Onboarding hoàn tất" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Thiếu hoặc sai dữ liệu đầu vào",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "summary": "Xem thông tin Profile cá nhân",
+        "description": "Lấy thông tin tài khoản và chỉ số cơ thể, lượng mục tiêu dinh dưỡng hiện tại.",
+        "responses": {
+          "200": {
+            "description": "Lấy thông tin thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/UserProfile" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Cập nhật thông tin Profile",
+        "description": "Sửa đổi chiều cao, cân nặng hoặc tên. Nếu thay đổi cân nặng/chiều cao/DOB/gender, hệ thống tự động tính lại mục tiêu Calories & Target Macro mới.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/UserProfile" },
+                    "message": { "type": "string", "example": "Cập nhật profile thành công" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/foods/search": {
+      "get": {
+        "summary": "Tìm kiếm món ăn trong database",
+        "description": "Tìm kiếm món ăn dựa trên từ khóa tiếng Anh sử dụng Full-Text Search (trên PostgreSQL). Nếu không truyền tham số q, hệ thống duyệt danh sách phân trang tất cả món ăn.",
+        "parameters": [
+          { "name": "q", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Từ khóa tìm kiếm (ví dụ: chicken)" },
+          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "default": 1 }, "description": "Trang cần xem" },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "default": 20, "maximum": 100 }, "description": "Số món trên mỗi trang (tối đa 100)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Food" } },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "page": { "type": "integer", "example": 1 },
+                        "limit": { "type": "integer", "example": 20 },
+                        "total": { "type": "integer", "example": 1250 },
+                        "totalPages": { "type": "integer", "example": 63 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meals": {
+      "post": {
+        "summary": "Lên lịch bữa ăn (Meal Planning)",
+        "description": "Thêm một món ăn vào lịch trình ăn uống của ngày cụ thể kèm khối lượng (gram). Hệ thống tự tạo snapshop lượng calories/macro thực tế vào bảng `meal_plans`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Thêm bữa ăn thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/Meal" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Lỗi dữ liệu đầu vào hoặc khối lượng âm",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Món ăn không tồn tại",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Xem danh sách lịch ăn trong ngày",
+        "description": "Lấy tất cả các bữa ăn đã được xếp lịch trong ngày chỉ định (YYYY-MM-DD), sắp xếp tăng dần theo thời gian ăn.",
+        "parameters": [
+          { "name": "date", "in": "query", "required": true, "schema": { "type": "string", "format": "date" }, "description": "Ngày cần xem (YYYY-MM-DD, ví dụ: 2025-01-15)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Meal" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/meals/{id}": {
+      "patch": {
+        "summary": "Sửa lịch/lượng bữa ăn đã lên kế hoạch",
+        "description": "Thay đổi thời gian ăn (`scheduledAt`) hoặc thay đổi khối lượng (`quantityG`). Nếu thay đổi khối lượng, hệ thống tự tính lại snapshop dinh dưỡng.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "ID của meal plan" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": { "$ref": "#/components/schemas/Meal" },
+                    "message": { "type": "string", "example": "Cập nhật bữa ăn thành công" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy bữa ăn cần sửa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Xóa bữa ăn",
+        "description": "Thực hiện soft delete (cập nhật cột `deleted_at`) bữa ăn chỉ định khỏi lịch trình.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" }, "description": "ID của meal plan" }
+        ],
+        "responses": {
+          "204": {
+            "description": "Xóa bữa ăn thành công"
+          },
+          "404": {
+            "description": "Không tìm thấy bữa ăn hoặc đã bị xóa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/summary/daily": {
+      "get": {
+        "summary": "Báo cáo tổng kết dinh dưỡng trong ngày",
+        "description": "Tính tổng Calories + Macro đã ăn thực tế so với mục tiêu Target trong ngày chỉ định (YYYY-MM-DD). Trả về chi tiết lượng Đã ăn (actual), Mục tiêu (target), Lượng còn lại (remaining) và Tỉ lệ phần trăm đạt được (percentage).",
+        "parameters": [
+          { "name": "date", "in": "query", "required": true, "schema": { "type": "string", "format": "date" }, "description": "Ngày cần xem báo cáo (YYYY-MM-DD)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "date": { "type": "string", "example": "2025-01-15" },
+                        "mealCount": { "type": "integer", "example": 3 },
+                        "actual": {
+                          "type": "object",
+                          "properties": {
+                            "calories": { "type": "number", "example": 1050.8 },
+                            "protein": { "type": "number", "example": 45.6 },
+                            "carbs": { "type": "number", "example": 135.0 },
+                            "fat": { "type": "number", "example": 38.4 }
+                          }
+                        },
+                        "target": {
+                          "type": "object",
+                          "properties": {
+                            "calories": { "type": "number", "example": 2375 },
+                            "protein": { "type": "number", "example": 148 },
+                            "carbs": { "type": "number", "example": 297 },
+                            "fat": { "type": "number", "example": 66 }
+                          }
+                        },
+                        "remaining": {
+                          "type": "object",
+                          "properties": {
+                            "calories": { "type": "number", "example": 1324.2 },
+                            "protein": { "type": "number", "example": 102.4 },
+                            "carbs": { "type": "number", "example": 162.0 },
+                            "fat": { "type": "number", "example": 27.6 }
+                          }
+                        },
+                        "percentage": {
+                          "type": "object",
+                          "properties": {
+                            "calories": { "type": "number", "example": 44.2 },
+                            "protein": { "type": "number", "example": 30.8 },
+                            "carbs": { "type": "number", "example": 45.5 },
+                            "fat": { "type": "number", "example": 58.2 }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recommend": {
+      "get": {
+        "summary": "Gợi ý món ăn thông minh (Hybrid Recommendation)",
+        "description": "Sử dụng giải thuật Hybrid kết hợp Vector Similarity (Cosine Similarity từ model NGCF) và bộ lọc profile của user. Hệ thống tính toán User Taste Centroid từ meal plans đã ăn rồi so sánh độ tương quan với hàng nghìn món ăn. Món ăn trả về tự động được lọc sạch chất dị ứng (`allergies`) và tăng điểm ưu tiên (+0.2) với `cuisines` và `diet_tags` yêu thích.",
+        "parameters": [
+          { "name": "date", "in": "query", "required": true, "schema": { "type": "string", "format": "date" }, "description": "Ngày để tính toán lịch sử ăn uống làm cơ sở (YYYY-MM-DD)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Thành công, trả về 20 món ăn được gợi ý cá nhân hóa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "allOf": [
+                          { "$ref": "#/components/schemas/Food" },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "similarity": { "type": "number", "example": 0.8241, "description": "Độ tương đồng cosine vector similarity với khẩu vị" },
+                              "score": { "type": "number", "example": 1.2241, "description": "Điểm số cuối cùng sau khi cộng thưởng tag/cuisine" }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Chưa hoàn thành Onboarding",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
