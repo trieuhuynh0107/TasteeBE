@@ -6,25 +6,25 @@ const searchFoods = async ({ q, page = 1, limit = 20 }) => {
   let query, countQuery, values, countValues;
 
   if (q) {
-    // Sử dụng Full-Text Search
+    // Sử dụng ILIKE để hỗ trợ tìm kiếm từng ký tự động (Search-as-you-type)
     query = `
-      SELECT id, name, ingredients, image_url, calories, protein, carbs, fat, tags
+      SELECT id, name, name_vi, ingredients, image_url, calories, protein, carbs, fat, tags
       FROM foods
-      WHERE to_tsvector('english', name) @@ plainto_tsquery('english', $1)
+      WHERE name ILIKE $1 OR name_vi ILIKE $1
       ORDER BY id
       LIMIT $2 OFFSET $3
     `;
-    values = [q, limit, offset];
+    values = [`%${q}%`, limit, offset];
     
     countQuery = `
       SELECT COUNT(*)
       FROM foods
-      WHERE to_tsvector('english', name) @@ plainto_tsquery('english', $1)
+      WHERE name ILIKE $1 OR name_vi ILIKE $1
     `;
-    countValues = [q];
+    countValues = [`%${q}%`];
   } else {
     query = `
-      SELECT id, name, ingredients, image_url, calories, protein, carbs, fat, tags
+      SELECT id, name, name_vi, ingredients, image_url, calories, protein, carbs, fat, tags
       FROM foods
       ORDER BY id
       LIMIT $1 OFFSET $2
