@@ -41,7 +41,7 @@ const ensureFunctionInitialized = async () => {
   }
 };
 
-const getRecommendations = async (userId, date) => {
+const getRecommendations = async (userId, date, ingredients) => {
   // 1. Khởi tạo function cosine_similarity trong PostgreSQL nếu chưa có
   await ensureFunctionInitialized();
 
@@ -87,9 +87,15 @@ const getRecommendations = async (userId, date) => {
     }
   }
 
-  // 4. Tìm kiếm các ứng viên foods (loại bỏ món chứa chất gây dị ứng)
+  // 4. Tìm kiếm các ứng viên foods (loại bỏ món chứa chất gây dị ứng và lọc theo nguyên liệu nếu có)
   let candidates = [];
   const allergyArray = allergies && allergies.length ? allergies : null;
+
+  // Trích xuất regex pattern cho ingredients
+  const escapeRegex = (string) => string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+  const ingredientsPattern = ingredients
+    ? ingredients.split(',').map(i => escapeRegex(i.trim())).filter(Boolean).join('|')
+    : null;
 
   if (userEmbedding) {
     // Nếu có lịch sử, tính similarity bằng SQL
@@ -99,9 +105,10 @@ const getRecommendations = async (userId, date) => {
        FROM foods
        WHERE embedding IS NOT NULL
          AND ($2::text[] IS NULL OR NOT (tags && $2::text[]))
+         AND ($3::text IS NULL OR ingredients ~* $3)
        ORDER BY similarity DESC
        LIMIT 200`,
-      [userEmbedding, allergyArray]
+      [userEmbedding, allergyArray, ingredientsPattern]
     );
     candidates = candidatesRes.rows;
   } else {
@@ -112,9 +119,10 @@ const getRecommendations = async (userId, date) => {
        FROM foods
        WHERE embedding IS NOT NULL
          AND ($1::text[] IS NULL OR NOT (tags && $1::text[]))
+         AND ($2::text IS NULL OR ingredients ~* $2)
        ORDER BY id
        LIMIT 200`,
-      [allergyArray]
+      [allergyArray, ingredientsPattern]
     );
     candidates = candidatesRes.rows;
   }

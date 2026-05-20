@@ -31,6 +31,7 @@ app.use('/foods',     require('./modules/foods/foods.routes'));
 app.use('/meals',     require('./modules/meals/meals.routes'));
 app.use('/summary',   require('./modules/summary/summary.routes'));
 app.use('/recommend', require('./modules/recommendation/recommendation.routes'));
+app.use('/metadata',  require('./modules/recommendation/recommendation.routes'));
 
 app.get('/health', (req, res) => {
   res.json({ success: true, message: 'Tastee API is running' });
