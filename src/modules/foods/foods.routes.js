@@ -1,7 +1,7 @@
 // src/modules/foods/foods.routes.js
 const router = require('express').Router();
 const { authMiddleware } = require('../../middlewares/auth');
-const { sendPaginated, sendError } = require('../../utils/response');
+const { sendSuccess, sendPaginated, sendError } = require('../../utils/response');
 const foodsService = require('./foods.service');
 
 router.use(authMiddleware);
@@ -23,4 +23,17 @@ router.get('/search', async (req, res, next) => {
   }
 });
 
+router.get('/:id', async (req, res, next) => {
+  try {
+    const food = await foodsService.getFoodById(req.params.id);
+    if (!food) {
+      return sendError(res, 404, 'NOT_FOUND', 'Món ăn không tồn tại');
+    }
+    sendSuccess(res, food);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
+

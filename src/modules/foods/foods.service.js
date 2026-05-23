@@ -46,4 +46,15 @@ const searchFoods = async ({ q, page = 1, limit = 20 }) => {
   };
 };
 
-module.exports = { searchFoods };
+const getFoodById = async (id) => {
+  const query = `
+    SELECT id, name, name_vi, ingredients, image_url, calories, protein, carbs, fat, fiber, sugar, sodium, tags
+    FROM foods
+    WHERE id = $1
+  `;
+  const result = await pool.query(query, [id]);
+  return result.rows[0] || null;
+};
+
+module.exports = { searchFoods, getFoodById };
+
