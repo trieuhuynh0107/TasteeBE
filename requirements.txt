@@ -1,0 +1,2 @@
+# Python dependencies for Tastee ML scripts
+torch>=2.0.0

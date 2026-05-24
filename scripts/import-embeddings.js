@@ -4,7 +4,7 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const pool = require('../src/config/db');
 
-const PP_RECIPES_CSV = 'D:\\ingredients\\Foodcom\\PP_recipes.csv';
+const PP_RECIPES_CSV = process.env.PP_RECIPES_CSV || 'data/PP_recipes.csv';
 const EMBEDDINGS_JSON = 'scripts/item_embeddings.json';
 
 const importEmbeddings = async () => {

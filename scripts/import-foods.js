@@ -4,7 +4,7 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const pool = require('../src/config/db');
 
-const CSV_FILE = 'D:\\ingredients\\Foodcom\\RAW_recipes.csv';
+const CSV_FILE = process.env.RAW_RECIPES_CSV || 'data/RAW_recipes.csv';
 
 const parsePythonList = (str) => {
   if (!str) return [];
